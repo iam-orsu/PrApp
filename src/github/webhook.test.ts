@@ -1,12 +1,14 @@
 import { isRelevantEvent, getEventType } from './webhook';
 
 describe('Webhook Event Filtering', () => {
+  const mockRepository = { id: 456, name: 'repo', full_name: 'owner/repo', owner: { login: 'owner', type: 'User' } };
+
   it('should accept pull_request opened events', () => {
     const event = {
       action: 'opened',
       pull_request: { id: 1, number: 1, title: 'Test', head: { sha: 'abc' }, state: 'open' },
       installation: { id: 123 },
-      repository: { id: 456 },
+      repository: mockRepository,
     };
 
     expect(isRelevantEvent(event)).toBe(true);
@@ -17,7 +19,7 @@ describe('Webhook Event Filtering', () => {
       action: 'synchronize',
       pull_request: { id: 1, number: 1, title: 'Test', head: { sha: 'abc' }, state: 'open' },
       installation: { id: 123 },
-      repository: { id: 456 },
+      repository: mockRepository,
     };
 
     expect(isRelevantEvent(event)).toBe(true);
@@ -28,7 +30,7 @@ describe('Webhook Event Filtering', () => {
       action: 'assigned',
       pull_request: { id: 1, number: 1, title: 'Test', head: { sha: 'abc' }, state: 'open' },
       installation: { id: 123 },
-      repository: { id: 456 },
+      repository: mockRepository,
     };
 
     expect(isRelevantEvent(event)).toBe(false);
@@ -38,7 +40,7 @@ describe('Webhook Event Filtering', () => {
     const event = {
       action: 'opened',
       pull_request: { id: 1, number: 1, title: 'Test', head: { sha: 'abc' }, state: 'open' },
-      repository: { id: 456 },
+      repository: mockRepository,
     };
 
     expect(isRelevantEvent(event)).toBe(false);
@@ -46,7 +48,8 @@ describe('Webhook Event Filtering', () => {
 
   it('should correctly identify event type', () => {
     const prEvent = {
-      pull_request: { id: 1 },
+      pull_request: { id: 1, number: 1, title: 'Test', head: { sha: 'abc' }, state: 'open' },
+      repository: mockRepository,
     };
 
     expect(getEventType(prEvent)).toBe('pull_request');
