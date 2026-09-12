@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS repositories (
   name VARCHAR(255) NOT NULL,
   full_name VARCHAR(511) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT unique_repo_per_install UNIQUE(installation_id, github_repo_id)
 );
 

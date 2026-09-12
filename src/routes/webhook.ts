@@ -72,10 +72,12 @@ export async function handleWebhook(
     }
 
     // Record delivery (for idempotency)
+    // Pass null for installation_id: the installation DB record doesn't exist yet at
+    // this point, and the column FK references the internal PK, not GitHub's ID.
     const payloadHash = crypto.createHash('sha256').update(payload).digest('hex');
     const isNew = await recordWebhookDelivery(
       deliveryId,
-      event.installation?.id || null,
+      null,
       eventType,
       action,
       payloadHash

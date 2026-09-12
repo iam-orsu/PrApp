@@ -57,6 +57,7 @@ required_vars=(
     "DEEPSEEK_API_KEY"
     "DOMAIN"
     "LETSENCRYPT_EMAIL"
+    "POSTGRES_PASSWORD"
 )
 
 for var in "${required_vars[@]}"; do
@@ -265,7 +266,7 @@ log_info "✓ Database migrations completed"
 log_info "Waiting for application to be ready..."
 attempt=0
 while [ $attempt -lt 60 ]; do
-    if docker compose exec -T app curl -s http://localhost:3000/health >/dev/null 2>&1; then
+    if docker compose exec -T app wget --quiet --tries=1 --spider http://localhost:3000/health >/dev/null 2>&1; then
         log_info "✓ Application is healthy"
         break
     fi
