@@ -45,9 +45,9 @@ async function main() {
       res.status(404).json({ error: 'Not found' });
     });
 
-    // Error handler
+    // Error handler — must have exactly 4 params for Express to recognize it
     app.use(
-      (err: Error, req: express.Request, res: express.Response) => {
+      (err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
         logger.error('Unhandled error', err);
         res.status(500).json({
           error: 'Internal server error',

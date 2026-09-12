@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as crypto from 'crypto';
 import { logger } from '../utils/logger';
+import { config } from '../utils/config';
 import {
   validateWebhookSignature,
   parseWebhookEvent,
@@ -116,16 +117,16 @@ async function processWebhookEvent(
   const repo = event.repository.name;
   const ownerType = event.repository.owner.type;
 
-  // Create or get installation (use actual app ID from config, not installation ID)
+  // Create or get installation
   const installation = await getOrCreateInstallation(
     installationId,
-    event.installation?.id || 0, // Just use a placeholder, not critical for this audit
+    config.github.appId,
     owner,
     ownerType
   );
 
-  // Create or get repository
-  await getOrCreateRepository(
+  // Create or get repository — capture DB internal ID for FK references
+  const dbRepoId = await getOrCreateRepository(
     installation,
     repoId,
     owner,
@@ -148,7 +149,7 @@ async function processWebhookEvent(
     // Create or update PR record
     await getOrCreatePR(
       installation,
-      repoId,
+      dbRepoId,
       pr.id,
       prNumber,
       pr.title,
@@ -188,7 +189,7 @@ async function processWebhookEvent(
               `INSERT INTO processing_queue
                (installation_id, repository_id, pr_id, status)
                VALUES ($1, $2, $3, 'pending')`,
-              [installation, repoId, prId]
+              [installation, dbRepoId, prId]
             );
 
             logger.debug('Queued PR for processing', { prNumber });

@@ -1,4 +1,4 @@
-.PHONY: help build start stop restart logs test deploy
+.PHONY: help build start stop restart logs test deploy clean db-backup db-logs health ps shell-app shell-db migrate
 
 help:
 	@echo "PR Summary GitHub App - Development Commands"
@@ -10,8 +10,7 @@ help:
 	@echo "  make restart       - Restart Docker containers"
 	@echo "  make logs          - View application logs"
 	@echo "  make test          - Run tests"
-	@echo "  make deploy        - Run deployment script"
-	@echo "  make cert          - Obtain SSL certificate"
+	@echo "  make deploy        - Run deployment script (includes SSL)"
 	@echo "  make clean         - Remove containers and volumes"
 	@echo "  make db-backup     - Backup database"
 	@echo "  make db-logs       - View database logs"
@@ -44,10 +43,7 @@ test:
 	npm test
 
 deploy:
-	./deploy.sh
-
-cert:
-	sudo ./obtain-cert.sh
+	sudo ./deploy.sh
 
 clean:
 	docker-compose down -v

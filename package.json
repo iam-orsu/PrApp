@@ -18,7 +18,6 @@
     "pg": "^8.11.3",
     "octokit": "^3.1.0",
     "jsonwebtoken": "^9.1.2",
-    "crypto": "builtin",
     "dotenv": "^16.3.1",
     "axios": "^1.6.5"
   },

@@ -29,6 +29,7 @@ interface WebhookEvent {
     id: number;
     state: string;
   };
+  push?: unknown;
 }
 
 export interface ValidatedWebhookEvent extends WebhookEvent {

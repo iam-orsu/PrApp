@@ -63,7 +63,7 @@ services:
       - "com.example.description=PR Summary AI App"
 
   nginx:
-    image: nginx:latest-alpine
+    image: nginx:alpine
     container_name: pr-app-nginx
     depends_on:
       - app
