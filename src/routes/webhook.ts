@@ -166,6 +166,7 @@ async function processWebhookEvent(
       // Queue for processing with lock to prevent duplicates
       const client = await getPool().connect();
       let shouldProcess = false;
+      let queueJobId: number | null = null;
       try {
         await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
 
@@ -189,12 +190,14 @@ async function processWebhookEvent(
 
           if (!queuedCheck.rows[0]) {
             // Add to processing queue only if not already queued
-            await client.query(
+            const insertResult = await client.query(
               `INSERT INTO processing_queue
                (installation_id, repository_id, pr_id, status)
-               VALUES ($1, $2, $3, 'pending')`,
+               VALUES ($1, $2, $3, 'pending')
+               RETURNING id`,
               [installation, dbRepoId, prId]
             );
+            queueJobId = insertResult.rows[0].id;
             shouldProcess = true;
             logger.debug('Queued PR for processing', { prNumber });
           } else {
@@ -211,11 +214,24 @@ async function processWebhookEvent(
       }
 
       // Process immediately (V1: synchronous) — only if we actually queued this run
-      if (shouldProcess) {
+      if (shouldProcess && queueJobId !== null) {
         try {
           await processPR(installationId, repoId, prNumber, owner, repo);
+          // Mark completed so future webhooks (new commits, new reviews) can re-process
+          await getPool().query(
+            `UPDATE processing_queue
+             SET status = 'completed', updated_at = CURRENT_TIMESTAMP, completed_at = CURRENT_TIMESTAMP
+             WHERE id = $1`,
+            [queueJobId]
+          );
         } catch (error) {
           logger.error('Failed to process PR', { prNumber, error });
+          await getPool().query(
+            `UPDATE processing_queue
+             SET status = 'failed', error_message = $1, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2`,
+            [error instanceof Error ? error.message : 'Unknown error', queueJobId]
+          );
           // Don't re-throw - the webhook delivery is still successful
         }
       }
