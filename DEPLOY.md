@@ -120,22 +120,55 @@ Before running deployment, you must have:
   openssl rand -hex 32
   ```
 
-**Permissions:**
-Select these specific permissions:
+### Set Permissions (CRITICAL — Do This Exactly)
 
-| Permission | Level | Reason |
-|-----------|-------|--------|
-| Pull requests | Read & Write | Read PR data, write Check Runs |
-| Contents | Read | Read file diffs |
-| Checks | Read & Write | Create/update Check Runs |
-| Metadata | Read | (Required by GitHub) |
+After filling in basic info, scroll down to the **"Permissions"** section. You'll see expandable dropdowns.
 
-**Subscribe to Webhook Events:**
-- ✅ Pull request
-- ✅ Pull request review
+**For each permission, click the dropdown and select the level shown below:**
 
-**Installation:**
-- Leave "Only on this account" unchecked (allows installation on other repos)
+#### 1. Repository Permissions → Pull requests
+- Click the dropdown next to "Pull requests"
+- Select: **"Read & Write"**
+  
+#### 2. Repository Permissions → Contents  
+- Click the dropdown next to "Contents"
+- Select: **"Read"**
+
+#### 3. Repository Permissions → Checks
+- Click the dropdown next to "Checks"  
+- Select: **"Read & Write"**
+
+#### 4. Account Permissions → Metadata
+- Scroll down to "Account permissions"
+- Click the dropdown next to "Metadata"
+- Select: **"Read"** (GitHub requires this)
+
+**Result should look like this:**
+```
+Repository permissions
+  Pull requests        → Read & Write ✓
+  Contents             → Read ✓
+  Checks               → Read & Write ✓
+
+Account permissions
+  Metadata             → Read ✓
+```
+
+### Subscribe to Webhook Events
+
+Scroll down to **"Subscribe to events"** section.
+
+**Check exactly these two boxes:**
+- ✅ **Pull request** (checkbox should be filled)
+- ✅ **Pull request review** (checkbox should be filled)
+
+All other checkboxes should be **unchecked**.
+
+### Installation Settings
+
+At the bottom, **"Where can this GitHub App be installed?"**
+- Select: **"Any account"** (allows installation on other repos)
+- Do NOT check "Only on this account"
 
 ### Save Your Credentials
 
