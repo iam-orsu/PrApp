@@ -320,16 +320,28 @@ renewal_script="${SCRIPT_DIR}/renew-certs.sh"
 cat > "${renewal_script}" << 'EOF'
 #!/bin/bash
 cd $(dirname $0)
+
+# Stop nginx to free port 80 — certbot standalone needs it for ACME challenge
+docker compose stop nginx 2>/dev/null || true
+
 docker run --rm \
     -v "$(pwd)/letsencrypt:/etc/letsencrypt" \
     certbot/certbot:latest renew \
         --non-interactive \
         --quiet
 
-# Reload nginx if renewal was successful
-if [ $? -eq 0 ]; then
+renewal_exit=$?
+
+# Always restart nginx regardless of renewal outcome
+docker compose start nginx 2>/dev/null || true
+
+# Reload nginx config to pick up new certificates
+if [ $renewal_exit -eq 0 ]; then
+    sleep 2
     docker compose exec -T nginx nginx -s reload 2>/dev/null || true
 fi
+
+exit $renewal_exit
 EOF
 
 chmod +x "${renewal_script}"

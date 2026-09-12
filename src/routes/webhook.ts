@@ -160,7 +160,8 @@ async function processWebhookEvent(
     );
 
     // Only process if PR is relevant
-    const relevantActions = ['opened', 'synchronize', 'edited', 'reopened'];
+    // 'submitted' covers pull_request_review events — re-summarize when reviews arrive
+    const relevantActions = ['opened', 'synchronize', 'edited', 'reopened', 'submitted'];
     if (relevantActions.includes(event.action || '')) {
       // Queue for processing with lock to prevent duplicates
       const client = await getPool().connect();
