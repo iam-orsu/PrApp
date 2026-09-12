@@ -132,7 +132,7 @@ export async function processPR(
     const checkRunData = {
       name: 'PR Summary',
       status: 'completed' as const,
-      conclusion: 'neutral' as const,
+      conclusion: 'success' as const,
       external_id: `pr-summary-${prNumber}`,
       output: {
         title: 'AI-Generated PR Summary',
