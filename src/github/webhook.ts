@@ -96,15 +96,16 @@ export function isRelevantEvent(event: WebhookEvent): boolean {
     pull_request_review: ['submitted', 'edited'],
   };
 
-  // Check if this looks like a PR-related event
-  if (event.pull_request && event.action) {
-    const prActions = relevantActions.pull_request as string[];
-    return prActions.includes(event.action);
-  }
-
+  // Check review events first — review webhooks include both pull_request AND review fields,
+  // so we must check event.review before event.pull_request to avoid misclassification.
   if (event.review && event.action) {
     const reviewActions = relevantActions.pull_request_review as string[];
     return reviewActions.includes(event.action);
+  }
+
+  if (event.pull_request && event.action) {
+    const prActions = relevantActions.pull_request as string[];
+    return prActions.includes(event.action);
   }
 
   return false;

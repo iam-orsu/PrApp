@@ -165,14 +165,15 @@ async function processWebhookEvent(
     if (relevantActions.includes(event.action || '')) {
       // Queue for processing with lock to prevent duplicates
       const client = await getPool().connect();
+      let shouldProcess = false;
       try {
         await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
 
-        // Get PR ID for processing queue
+        // Get PR ID for processing queue — use internal repository_id, not github repo ID
         const prResult = await client.query(
           `SELECT id FROM pull_requests
-           WHERE installation_id = $1 AND github_repo_id = $2 AND pr_number = $3`,
-          [installation, repoId, prNumber]
+           WHERE installation_id = $1 AND repository_id = $2 AND pr_number = $3`,
+          [installation, dbRepoId, prNumber]
         );
 
         if (prResult.rows[0]) {
@@ -194,7 +195,7 @@ async function processWebhookEvent(
                VALUES ($1, $2, $3, 'pending')`,
               [installation, dbRepoId, prId]
             );
-
+            shouldProcess = true;
             logger.debug('Queued PR for processing', { prNumber });
           } else {
             logger.debug('PR already queued, skipping duplicate', { prNumber });
@@ -209,13 +210,14 @@ async function processWebhookEvent(
         client.release();
       }
 
-      // Process immediately (V1: synchronous)
-      // In production, this would go to a job queue
-      try {
-        await processPR(installationId, repoId, prNumber, owner, repo);
-      } catch (error) {
-        logger.error('Failed to process PR', { prNumber, error });
-        // Don't re-throw - the webhook delivery is still successful
+      // Process immediately (V1: synchronous) — only if we actually queued this run
+      if (shouldProcess) {
+        try {
+          await processPR(installationId, repoId, prNumber, owner, repo);
+        } catch (error) {
+          logger.error('Failed to process PR', { prNumber, error });
+          // Don't re-throw - the webhook delivery is still successful
+        }
       }
     } else {
       logger.debug('PR action not relevant for processing', { action: event.action });
