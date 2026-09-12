@@ -17,9 +17,16 @@ async function main() {
     // Initialize Express
     const app = express();
 
-    // Middleware
+    // CRITICAL: Store raw body before any parsing for webhook signature verification
+    app.use(express.raw({ type: 'application/json' }));
+    app.use((req: any, res, next) => {
+      // Store raw body for webhook signature verification
+      if (req.headers['x-github-delivery']) {
+        req.rawBody = req.body;
+      }
+      next();
+    });
     app.use(express.json());
-    app.use(express.raw({ type: 'application/json' })); // For webhook signature verification
 
     // Health check
     app.get('/health', (req, res) => {

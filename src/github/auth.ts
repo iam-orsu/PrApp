@@ -31,7 +31,11 @@ function createJWT(): string {
     exp,
   };
 
-  return jwt.sign(payload, config.github.privateKey, {
+  // Convert escaped newlines in private key to actual newlines
+  // (environment variables can't contain literal newlines, so they're escaped as \n)
+  const privateKey = config.github.privateKey.replace(/\\n/g, '\n');
+
+  return jwt.sign(payload, privateKey, {
     algorithm: 'RS256',
   });
 }

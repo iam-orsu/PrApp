@@ -81,9 +81,17 @@ async function callDeepSeek(messages: DeepSeekMessage[]): Promise<DeepSeekRespon
         logger.warn('DeepSeek rate limit hit');
         throw new Error('DEEPSEEK_RATE_LIMITED');
       }
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        logger.error('DeepSeek authentication failed - check API key');
+        throw new Error('DEEPSEEK_AUTH_FAILED');
+      }
       if (error.code === 'ECONNABORTED') {
         logger.warn('DeepSeek request timeout');
         throw new Error('DEEPSEEK_TIMEOUT');
+      }
+      if (error.response?.status && error.response.status >= 500) {
+        logger.warn('DeepSeek server error', { status: error.response.status });
+        throw new Error('DEEPSEEK_SERVER_ERROR');
       }
     }
     logger.error('DeepSeek API error', error);

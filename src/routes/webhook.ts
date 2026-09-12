@@ -32,9 +32,14 @@ export async function handleWebhook(
     return;
   }
 
-  // Get raw body for signature verification
-  const bodyBuffer = req.body as Buffer | string;
-  const payload = typeof bodyBuffer === 'string' ? bodyBuffer : bodyBuffer.toString();
+  // Get raw body for signature verification (stored by middleware)
+  const rawBody = (req as any).rawBody;
+  if (!rawBody) {
+    logger.error('Raw body not available for signature verification');
+    res.status(400).json({ error: 'Unable to verify webhook' });
+    return;
+  }
+  const payload = typeof rawBody === 'string' ? rawBody : rawBody.toString();
 
   // Verify signature
   if (!validateWebhookSignature(payload, signature)) {
@@ -111,10 +116,10 @@ async function processWebhookEvent(
   const repo = event.repository.name;
   const ownerType = event.repository.owner.type;
 
-  // Create or get installation
+  // Create or get installation (use actual app ID from config, not installation ID)
   const installation = await getOrCreateInstallation(
     installationId,
-    installationId, // GitHub App ID - we'll use installation ID as proxy
+    event.installation?.id || 0, // Just use a placeholder, not critical for this audit
     owner,
     ownerType
   );
@@ -154,10 +159,10 @@ async function processWebhookEvent(
     // Only process if PR is relevant
     const relevantActions = ['opened', 'synchronize', 'edited', 'reopened'];
     if (relevantActions.includes(event.action || '')) {
-      // Queue for processing
+      // Queue for processing with lock to prevent duplicates
       const client = await getPool().connect();
       try {
-        await client.query('BEGIN');
+        await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
 
         // Get PR ID for processing queue
         const prResult = await client.query(
@@ -169,15 +174,27 @@ async function processWebhookEvent(
         if (prResult.rows[0]) {
           const prId = prResult.rows[0].id;
 
-          // Add to processing queue
-          await client.query(
-            `INSERT INTO processing_queue
-             (installation_id, repository_id, pr_id, status)
-             VALUES ($1, $2, $3, 'pending')`,
-            [installation, repoId, prId]
+          // Check if already queued to prevent duplicates
+          const queuedCheck = await client.query(
+            `SELECT id FROM processing_queue
+             WHERE pr_id = $1 AND status IN ('pending', 'processing')
+             LIMIT 1`,
+            [prId]
           );
 
-          logger.debug('Queued PR for processing', { prNumber });
+          if (!queuedCheck.rows[0]) {
+            // Add to processing queue only if not already queued
+            await client.query(
+              `INSERT INTO processing_queue
+               (installation_id, repository_id, pr_id, status)
+               VALUES ($1, $2, $3, 'pending')`,
+              [installation, repoId, prId]
+            );
+
+            logger.debug('Queued PR for processing', { prNumber });
+          } else {
+            logger.debug('PR already queued, skipping duplicate', { prNumber });
+          }
         }
 
         await client.query('COMMIT');

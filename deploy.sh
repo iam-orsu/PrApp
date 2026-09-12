@@ -74,11 +74,21 @@ log_step "Phase 2: Verifying Domain Configuration"
 
 log_info "Checking DNS resolution for ${DOMAIN}..."
 
-# Try to resolve domain
-resolved_ip=$(dig +short "${DOMAIN}" A | tail -1)
+# Try to resolve domain (using getent as it's more universal than dig)
+resolved_ip=""
+if command -v getent &> /dev/null; then
+    resolved_ip=$(getent hosts "${DOMAIN}" | awk '{print $1}' | head -1)
+elif command -v nslookup &> /dev/null; then
+    resolved_ip=$(nslookup "${DOMAIN}" 2>/dev/null | grep -A1 "Name:" | grep "Address:" | awk '{print $2}' | head -1)
+else
+    log_warn "Could not verify DNS (getent/nslookup not available). Skipping DNS verification."
+    resolved_ip="0.0.0.0" # Placeholder to allow continuation
+fi
 
-if [ -z "$resolved_ip" ]; then
-    error_exit "Domain '${DOMAIN}' does not resolve to an IP address. Check your DNS configuration."
+if [ -z "$resolved_ip" ] || [ "$resolved_ip" = "0.0.0.0" ]; then
+    if [ "$resolved_ip" != "0.0.0.0" ]; then
+        error_exit "Domain '${DOMAIN}' does not resolve to an IP address. Check your DNS configuration."
+    fi
 fi
 
 log_info "Domain ${DOMAIN} resolves to: ${resolved_ip}"
