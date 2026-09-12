@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:api-docs.deepseek.com)",
+      "WebFetch(domain:platform.deepseek.com)",
+      "WebFetch(domain:docs.docker.com)",
+      "WebFetch(domain:letsencrypt.org)",
+      "WebFetch(domain:docs.certbot.eff.org)",
+      "WebFetch(domain:deepseek.com)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "WebFetch(domain:certbot.eff.org)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
